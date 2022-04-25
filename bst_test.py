@@ -9,5 +9,6 @@ tree.insert((0,0), 'zero')
 tree.insert((1,1), 'one v2')
 
 print(tree.get_val_from_closest_key((1,2)))
+print(tree.get_inorder())
 
 

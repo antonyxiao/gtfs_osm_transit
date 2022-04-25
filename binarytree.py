@@ -55,7 +55,8 @@ class BinaryTree:
         return result_dict[closest_key]
 
     def get_closest_key(self, n, closest=[CLOSEST,None]):
-        return self.search_closest_recursion(self.root, n[0], closest).key
+        result_key = self.search_closest_recursion(self.root, n[0], closest).key
+        return result_key
 
     def search_closest_recursion(self, root, n, closest=[CLOSEST,None]):
         if root is None:
@@ -69,11 +70,22 @@ class BinaryTree:
         else:
             return self.search_closest_recursion(root.right, n, closest)
 
+    def get_inorder(self):
+        tree_list = []
+        self.get_inorder_recursion(self.root, tree_list)
+        return tree_list
+
+    def get_inorder_recursion(self, root, tree_list):
+        if root:
+            self.get_inorder_recursion(root.left, tree_list)
+            tree_list.extend(list(root.val.values()))
+            self.get_inorder_recursion(root.right, tree_list)
+
     def inorder(self):
         self.inorder_recursion(self.root)
 
     def inorder_recursion(self, root):
         if root:
             self.inorder_recursion(root.left)
-            print (root.key, end=' ')
+            print(root.key, end=' ')
             self.inorder_recursion(root.right)

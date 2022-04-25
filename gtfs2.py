@@ -112,12 +112,21 @@ def get_weekday():
 
 def get_nearest_stops(gtfs: dict, gcs: dict, count: int = 1):
     nearest = []
-    stops = gtfs['stops']
-    #for i in range(count):                                                                                         
-    nearest.append(gtfs['stops'].get_val_from_closest_key((abs(gcs['lat']), abs(gcs['lon']))))
-        # nearest.append(stops[min(range(len(stops)), key = lambda i: measure(gcs['lat'], gcs['lon'], float(stops[i]['stop_lat']), float(stops[i]['stop_lon'])))])
-        # stops.remove(nearest[i])
+    stops = gtfs['stops'].get_inorder()
+    for i in range(count):
+         nearest.append(stops[min(range(len(stops)), key = lambda i: measure(gcs['lat'], gcs['lon'], float(stops[i]['stop_lat']), float(stops[i]['stop_lon'])))])
+         stops.remove(nearest[i])
     return nearest
+
+    # binary tree for the nearest bus
+    # nearest = []
+    # nearest.append(gtfs['stops'].get_val_from_closest_key((abs(gcs['lat']), abs(gcs['lon']))))
+    # stops = gtfs['stops'].get_inorder()
+    # stops.remove(nearest[0])
+    # for i in range(1, count):
+    #      nearest.append(stops[min(range(len(stops)), key = lambda i: measure(gcs['lat'], gcs['lon'], float(stops[i]['stop_lat']), float(stops[i]['stop_lon'])))])
+    #      stops.remove(nearest[i])
+    # return nearest
 
 def get_service_id_by_weekday(gtfs, weekday: str):
     for day in gtfs['calendar']:
@@ -152,6 +161,7 @@ def print_stop_times(stop_times, count=1):
 
 
 def main():
+    start=datetime.now()
     gtfs = load_gtfs_dict()
 
     # gtfs['stops'].inorder()
@@ -169,17 +179,21 @@ def main():
     usr_input = int(sys.argv[1])
     nearest = get_nearest_stops(gtfs, gcs, usr_input)
     print_stops(nearest, gcs, usr_input)
+    
+    print(datetime.now()-start)
 
     buses = get_all_buses_at_stop(gtfs, nearest[0]['stop_id'])
 
     print()
     usr_input_stop = int(input('Select a stop: '))
     usr_input_count = int(input('How many buses would you like to see: '))
+    start=datetime.now()
     next_bus = get_next_bus_at_stop(gtfs, nearest[usr_input_stop]['stop_id'], today_trip_ids, time, usr_input_count)
     # print(nearest[0])
     print()
     print_stop_times(next_bus, usr_input_count)
 
+    print(datetime.now()-start)
     # victoria_vehicle_position = 'http://victoria.mapstrat.com/current/gtfrealtime_VehiclePositions.bin'
     # victoria_trip_updates = 'http://victoria.mapstrat.com/current/gtfrealtime_TripUpdates.bin'
     # veh_position: dict = fetch_realtime_data(victoria_vehicle_position)
@@ -191,5 +205,6 @@ def main():
     #             print(update)
     #             epoch = update['trip_update']['stop_time_update'][0]['arrival']['time']
     #             print(datetime.fromtimestamp(epoch))
+
 
 main()
