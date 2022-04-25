@@ -7,9 +7,28 @@ from datetime import datetime
 from google.transit import gtfs_realtime_pb2
 from protobuf_to_dict import protobuf_to_dict
 import sys
+from binarytree import BinaryTree
 
 files = ['agency.txt', 'calendar.txt', 'calendar_dates.txt', 'routes.txt',
          'shapes.txt', 'stops.txt', 'stop_times.txt', 'trips.txt']
+
+def stops_to_binary_tree(gtfs):
+    try:
+        with open('saved_stops.pk1', 'rb') as f:
+            gtfs['stops'] = pickle.load(f)
+    except FileNotFoundError:
+        print('inserting stops into binarytree')
+        tree = BinaryTree()
+        for stop in gtfs['stops']:
+            sum_of_coordinates = (float(stop['stop_lat']), float(stop['stop_lon']))
+            tree.insert(sum_of_coordinates, stop)
+
+        with open('saved_stops.pk1', 'wb+') as f:
+            pickle.dump(tree, f)
+
+        gtfs['stops'] = tree
+        print('done inserting into binarytree')
+        print()
 
 def extract_from_zip():
     gtfs = {}
@@ -32,6 +51,10 @@ def extract_from_zip():
     except FileNotFoundError as e:
         print(e)
         exit(1)
+
+    # convert stops to a binary tree with coordinates as keys
+    stops_to_binary_tree(gtfs)
+
     # save gtfs
     with open('saved_gtfs.pk1', 'wb+') as f:
         pickle.dump(gtfs, f)
@@ -46,6 +69,25 @@ def load_gtfs_dict():
         extract_from_zip()
         with open('saved_gtfs.pk1', 'rb') as f:
             return pickle.load(f)
+
+def cantor_pairing(a, b):
+    a = abs(a)
+    b = abs(b)
+    result = (1/2)*(a+b)*(a+b+1)+b
+    print(result)
+    return result
+
+# extract GPS coordinates with a location module
+#
+# import time
+#
+# def get_location():
+#     location.start_updates()
+#     time.sleep(1)
+#     loc = location.get_location()
+#     location.stop_updates()
+#     if loc:
+#         return {'lat': loc['latitude'], 'lon': loc['longitude']}
 
 # Haversine formula
 def measure(lat1, lon1, lat2, lon2):  # generally used geo measurement function
@@ -71,9 +113,10 @@ def get_weekday():
 def get_nearest_stops(gtfs: dict, gcs: dict, count: int = 1):
     nearest = []
     stops = gtfs['stops']
-    for i in range(count):
-        nearest.append(stops[min(range(len(stops)), key = lambda i: measure(gcs['lat'], gcs['lon'], float(stops[i]['stop_lat']), float(stops[i]['stop_lon'])))])
-        stops.remove(nearest[i])
+    #for i in range(count):                                                                                         
+    nearest.append(gtfs['stops'].get_val_from_closest_key((abs(gcs['lat']), abs(gcs['lon']))))
+        # nearest.append(stops[min(range(len(stops)), key = lambda i: measure(gcs['lat'], gcs['lon'], float(stops[i]['stop_lat']), float(stops[i]['stop_lon'])))])
+        # stops.remove(nearest[i])
     return nearest
 
 def get_service_id_by_weekday(gtfs, weekday: str):
@@ -110,6 +153,8 @@ def print_stop_times(stop_times, count=1):
 
 def main():
     gtfs = load_gtfs_dict()
+
+    # gtfs['stops'].inorder()
     weekday = get_weekday()
     time = get_time()
     today_service_id = get_service_id_by_weekday(gtfs, weekday)
@@ -135,16 +180,16 @@ def main():
     print()
     print_stop_times(next_bus, usr_input_count)
 
-    victoria_vehicle_position = 'http://victoria.mapstrat.com/current/gtfrealtime_VehiclePositions.bin'
-    victoria_trip_updates = 'http://victoria.mapstrat.com/current/gtfrealtime_TripUpdates.bin'
-    veh_position: dict = fetch_realtime_data(victoria_vehicle_position)
-    trip_updates: dict = fetch_realtime_data(victoria_trip_updates)
+    # victoria_vehicle_position = 'http://victoria.mapstrat.com/current/gtfrealtime_VehiclePositions.bin'
+    # victoria_trip_updates = 'http://victoria.mapstrat.com/current/gtfrealtime_TripUpdates.bin'
+    # veh_position: dict = fetch_realtime_data(victoria_vehicle_position)
+    # trip_updates: dict = fetch_realtime_data(victoria_trip_updates)
 
-    for update in trip_updates['entity']:
-        for i in range(usr_input_count):
-            if (update['trip_update']['trip']['trip_id'] == next_bus[i]['trip_id'] and update['trip_update']['stop_time_update'][0]['stop_id'] ==  nearest[i]['stop_id']):
-                print(update)
-                epoch = update['trip_update']['stop_time_update'][0]['arrival']['time']
-                print(datetime.fromtimestamp(epoch))
+    # for update in trip_updates['entity']:
+    #     for i in range(usr_input_count):
+    #         if (update['trip_update']['trip']['trip_id'] == next_bus[i]['trip_id'] and update['trip_update']['stop_time_update'][0]['stop_id'] ==  nearest[i]['stop_id']):
+    #             print(update)
+    #             epoch = update['trip_update']['stop_time_update'][0]['arrival']['time']
+    #             print(datetime.fromtimestamp(epoch))
 
 main()
